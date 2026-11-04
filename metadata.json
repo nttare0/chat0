@@ -1,0 +1,6 @@
+{
+  "name": "Conduit",
+  "description": "A unified, end-to-end encrypted social media messaging inbox that bridges all your chat networks in one calm, secure workspace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

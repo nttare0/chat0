@@ -1,0 +1,105 @@
+<resources>
+    <string name="app_name">Conduit</string>
+
+    <!-- Spaces Drawer & Navigation -->
+    <string name="open_spaces_drawer">Open Spaces drawer</string>
+    <string name="spaces_header">Spaces</string>
+    <string name="space_all_chats">All Chats</string>
+    <string name="space_unread">Unread</string>
+    <string name="space_dms">Direct Messages</string>
+    <string name="space_groups">Groups</string>
+    <string name="space_archived">Archive</string>
+    <string name="drawer_networks_section">Chat Networks</string>
+    <string name="drawer_manage_bridges">Chat Networks &amp; Bridges</string>
+    <string name="drawer_security_prefs">Preferences &amp; E2EE Keys</string>
+
+    <!-- Beeper Inbox, Top Search Bar & Unread Toggle -->
+    <string name="inbox_title">Inbox</string>
+    <string name="pinned_section_label">Favorites</string>
+    <string name="top_search_placeholder">Search messages or contacts across all accounts…</string>
+    <string name="search_dock_placeholder">Search chats &amp; messages</string>
+    <string name="clear_search">Clear search</string>
+    <string name="unread_only_toggle">Unread</string>
+    <string name="unread_only_toggle_desc">Toggle unread messages filter</string>
+    <string name="search_results_count">%1$d matching chats</string>
+    <string name="empty_search_title">No matches found</string>
+    <string name="empty_search_subtitle">No messages or contacts matched “%1$s” across your connected accounts.</string>
+    <string name="empty_unread_title">No unread messages</string>
+    <string name="empty_unread_subtitle">You’ve read everything across your connected networks. Tap Unread above to return to all chats.</string>
+    <string name="new_chat_fab">New chat</string>
+    <string name="swipe_archive_hint">Archive</string>
+    <string name="swipe_unarchive_hint">Unarchive</string>
+    <string name="empty_inbox_title">Inbox Zero</string>
+    <string name="empty_inbox_subtitle">You’re all caught up. Archived chats stay safely encrypted in your local vault.</string>
+    <string name="select_chat_prompt">Select a chat to decrypt and read messages.</string>
+
+    <!-- Chat Thread -->
+    <string name="back_action">Back</string>
+    <string name="e2ee_verified">Session verified</string>
+    <string name="e2ee_unverified">Verify keys</string>
+    <string name="inspect_cipher">Inspect ciphertext</string>
+    <string name="pin_conversation">Pin to Favorites</string>
+    <string name="unpin_conversation">Remove from Favorites</string>
+    <string name="archive_conversation">Archive chat (Inbox Zero)</string>
+    <string name="unarchive_conversation">Move back to Inbox</string>
+    <string name="mute_conversation">Mute notifications</string>
+    <string name="unmute_conversation">Unmute notifications</string>
+    <string name="message_input_placeholder">Message on %1$s…</string>
+    <string name="send_message">Send encrypted message</string>
+    <string name="simulate_reply">Receive bridged reply</string>
+    <string name="cipher_inspector_title">Cryptographic Envelope</string>
+    <string name="cipher_algorithm_label">Algorithm</string>
+    <string name="cipher_algorithm_value">AES-256-GCM (NoPadding, 128-bit Auth Tag)</string>
+    <string name="cipher_iv_label">Initialization Vector (96-bit Nonce)</string>
+    <string name="cipher_payload_label">Encrypted Payload (Base64)</string>
+    <string name="cipher_sha_label">Envelope SHA-256 Digest</string>
+    <string name="close_action">Close</string>
+
+    <!-- Key Verification -->
+    <string name="safety_number_title">Safety Number Verification</string>
+    <string name="safety_number_desc">Compare this 60-digit safety number with %1$s on a trusted channel to confirm end-to-end encryption.</string>
+    <string name="mark_verified_action">Mark session verified</string>
+
+    <!-- New Chat -->
+    <string name="new_chat_title">New Chat</string>
+    <string name="new_chat_desc">Start an end-to-end encrypted conversation across any connected network.</string>
+    <string name="contact_name_label">Contact or group name</string>
+    <string name="contact_handle_label">Handle or phone number</string>
+    <string name="network_bridge_label">Send via network</string>
+    <string name="initial_message_label">First message (optional)</string>
+    <string name="create_chat_action">Start chat</string>
+    <string name="cancel_action">Cancel</string>
+
+    <!-- Bridges Screen -->
+    <string name="bridges_title">Chat Networks</string>
+    <string name="bridges_subtitle">Manage your Beeper-style Matrix protocol bridges in one encrypted vault.</string>
+    <string name="bridge_connected">Connected</string>
+    <string name="bridge_paused">Paused</string>
+    <string name="connect_handle_action">Configure</string>
+    <string name="bridge_dialog_title">Configure %1$s</string>
+    <string name="bridge_handle_input">Account handle or phone number</string>
+    <string name="save_bridge_action">Save &amp; connect</string>
+    <string name="disconnect_bridge_action">Pause network</string>
+
+    <!-- Preferences & E2EE Vault Screen -->
+    <string name="security_title">Preferences &amp; Keys</string>
+    <string name="security_subtitle">Customize your Beeper inbox density and inspect local Android Keystore keys.</string>
+    <string name="inbox_style_section_title">Inbox Display Style</string>
+    <string name="style_minimal_title">Minimal</string>
+    <string name="style_minimal_desc">Clean avatars and typography without protocol chips</string>
+    <string name="style_pro_title">Pro</string>
+    <string name="style_pro_desc">Show explicit network protocol chips, verification icons, and counters</string>
+    <string name="device_key_card_title">Device Recovery &amp; Identity Key</string>
+    <string name="device_key_card_desc">Hardware-backed AES-256-GCM master key stored in Android Keystore. Zero plaintext touches disk.</string>
+    <string name="copy_fingerprint">Copy fingerprint</string>
+    <string name="copied_toast">Fingerprint copied to clipboard</string>
+    <string name="vault_stats_encrypted_msgs">Encrypted messages</string>
+    <string name="vault_stats_verified_peers">Verified chats</string>
+    <string name="appearance_section_title">Appearance &amp; Privacy</string>
+    <string name="dark_mode_label">Dark mode</string>
+    <string name="dark_mode_desc">Beeper obsidian slate appearance</string>
+    <string name="hide_previews_label">Mask message previews</string>
+    <string name="hide_previews_desc">Display Base64 ciphertext in inbox list until opened</string>
+    <string name="rotate_session_action">Audit E2EE vault</string>
+    <string name="vault_integrity_ok">All %1$d stored message envelopes passed GCM authentication tag verification.</string>
+</resources>
