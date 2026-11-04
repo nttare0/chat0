@@ -1,9 +1,16 @@
 package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +21,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,48 +34,61 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Archive
-import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Call
+import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.DoneAll
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.MarkChatRead
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.DecryptedConversation
 import com.example.data.DecryptedMessage
-import com.example.ui.components.CipherEnvelopeInspectorDialog
 import com.example.ui.components.ContactAvatarWithBridge
+import com.example.ui.components.InstagramBlueAction
+import com.example.ui.components.InstagramGradientBerry
+import com.example.ui.components.InstagramHeartRed
+import com.example.ui.components.InstagramIncomingGlassDark
+import com.example.ui.components.LiquidGlassBackdrop
+import com.example.ui.components.LiquidGlassPill
 import com.example.ui.components.SafetyNumberVerificationDialog
 import com.example.ui.components.formatMessageTime
 import com.example.ui.components.icon
@@ -91,9 +113,10 @@ fun ChatThreadPane(
     }
 
     var draftText by rememberSaveable(conversation.id) { mutableStateOf("") }
-    var inspectedMessage by remember { mutableStateOf<DecryptedMessage?>(null) }
     var showSafetyDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
+    var activeReactionPickerMsgId by remember { mutableStateOf<Long?>(null) }
+    val messageReactions = remember { mutableStateMapOf<Long, String>() }
     val listState = rememberLazyListState()
 
     LaunchedEffect(messages.size) {
@@ -102,25 +125,33 @@ fun ChatThreadPane(
         }
     }
 
-    Column(
+    // Liquid Glass Ambient Backdrop with dynamic refractive fluid orbs
+    LiquidGlassBackdrop(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .imePadding()
             .testTag("chat_thread_pane")
     ) {
-        // Beeper Clean Thread Header with Network Channel Pill
-        Surface(
-            color = MaterialTheme.colorScheme.background,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Instagram-style Liquid Glass Top Bar
+            Surface(
+                color = Color(0xFF101015).copy(alpha = 0.88f),
+                border = BorderStroke(
+                    1.dp,
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (showBackButton) {
                         IconButton(
@@ -129,30 +160,50 @@ fun ChatThreadPane(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back_action)
+                                contentDescription = stringResource(R.string.back_action),
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.size(8.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
 
-                    ContactAvatarWithBridge(
-                        initials = conversation.avatarInitials,
-                        network = conversation.network,
-                        size = 40.dp
-                    )
+                    // Contact Avatar with active online indicator dot
+                    Box(modifier = Modifier.padding(end = 10.dp)) {
+                        ContactAvatarWithBridge(
+                            initials = conversation.avatarInitials,
+                            network = conversation.network,
+                            size = 40.dp
+                        )
+                        // Instagram green active status dot
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 2.dp, y = 2.dp)
+                                .size(11.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF22C55E))
+                                .border(BorderStroke(1.5.dp, Color(0xFF101015)), CircleShape)
+                        )
+                    }
 
+                    // Name and subtitle
                     Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showOverflowMenu = true },
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
                                 text = conversation.contactName,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                ),
                                 color = MaterialTheme.colorScheme.onBackground,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -161,63 +212,56 @@ fun ChatThreadPane(
                                 Icon(
                                     imageVector = Icons.Outlined.VerifiedUser,
                                     contentDescription = stringResource(R.string.e2ee_verified),
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = InstagramBlueAction,
                                     modifier = Modifier.size(15.dp)
                                 )
                             }
                         }
 
-                        // Beeper-style "via Network · Handle" subtitle
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            Icon(
-                                imageVector = conversation.network.icon(),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = "via ${conversation.network.displayName} · ${conversation.contactHandle}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        Text(
+                            text = "${stringResource(R.string.active_now)} · ${conversation.network.displayName}",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            color = Color(0xFFA1A1AA),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
 
-                    // Quick Inbox Zero Archive Button (Signature Beeper action)
+                    // Instagram DM action icons on right: Audio, Video, Info
                     IconButton(
-                        onClick = onToggleArchive,
-                        modifier = Modifier.testTag("header_archive_button")
+                        onClick = onSimulateReply,
+                        modifier = Modifier.testTag("chat_audio_call_button")
                     ) {
                         Icon(
-                            imageVector = if (conversation.isArchived) {
-                                Icons.Outlined.Unarchive
-                            } else {
-                                Icons.Outlined.Archive
-                            },
-                            contentDescription = stringResource(
-                                if (conversation.isArchived) {
-                                    R.string.unarchive_conversation
-                                } else {
-                                    R.string.archive_conversation
-                                }
-                            ),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Outlined.Call,
+                            contentDescription = stringResource(R.string.instagram_call),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onSimulateReply,
+                        modifier = Modifier.testTag("chat_video_call_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Videocam,
+                            contentDescription = stringResource(R.string.instagram_video_call),
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
                     Box {
                         IconButton(
                             onClick = { showOverflowMenu = true },
-                            modifier = Modifier.testTag("thread_overflow_button")
+                            modifier = Modifier.testTag("chat_info_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = "Chat options"
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = stringResource(R.string.instagram_info),
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
 
@@ -225,6 +269,16 @@ fun ChatThreadPane(
                             expanded = showOverflowMenu,
                             onDismissRequest = { showOverflowMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.safety_number_title)) },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.VerifiedUser, contentDescription = null)
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showSafetyDialog = true
+                                }
+                            )
                             DropdownMenuItem(
                                 text = {
                                     Text(
@@ -269,180 +323,103 @@ fun ChatThreadPane(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.safety_number_title)) },
+                                text = {
+                                    Text(
+                                        if (conversation.isArchived) {
+                                            stringResource(R.string.unarchive_conversation)
+                                        } else {
+                                            stringResource(R.string.archive_conversation)
+                                        }
+                                    )
+                                },
                                 leadingIcon = {
-                                    Icon(Icons.Outlined.VerifiedUser, contentDescription = null)
+                                    Icon(
+                                        if (conversation.isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                                        contentDescription = null
+                                    )
                                 },
                                 onClick = {
                                     showOverflowMenu = false
-                                    showSafetyDialog = true
+                                    onToggleArchive()
                                 }
                             )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.simulate_reply)) },
-                                leadingIcon = {
-                                    Icon(Icons.Outlined.MarkChatRead, contentDescription = null)
-                                },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    onSimulateReply()
-                                },
-                                modifier = Modifier.testTag("menu_simulate_reply")
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            }
-        }
-
-        // Beeper Message Stream
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .testTag("messages_list"),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item(key = "e2ee_bridge_pill") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        modifier = Modifier
-                            .clickable { showSafetyDialog = true }
-                            .testTag("verify_keys_badge")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Text(
-                                text = "${conversation.network.displayName} E2EE · AES-256-GCM · Tap bubble to view cipher",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                     }
                 }
             }
 
-            items(
-                items = messages,
-                key = { it.id }
-            ) { msg ->
-                BeeperMessageBubble(
-                    message = msg,
-                    onInspectCipher = { inspectedMessage = msg }
-                )
-            }
-        }
-
-        // Beeper Pill Message Composer Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                modifier = Modifier.weight(1f)
+            // Message Stream Area
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
-                Row(
+                LazyColumn(
+                    state = listState,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 13.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        .fillMaxSize()
+                        .testTag("messages_list"),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = conversation.network.icon(),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(17.dp)
-                    )
+                    items(
+                        items = messages,
+                        key = { it.id }
+                    ) { msg ->
+                        val reaction = messageReactions[msg.id]
+                        InstagramLiquidGlassMessageBubble(
+                            message = msg,
+                            reaction = reaction,
+                            isLastOutgoing = msg.isOutgoing && msg == messages.lastOrNull { it.isOutgoing },
+                            onDoubleTapHeart = {
+                                if (messageReactions[msg.id] == "❤️") {
+                                    messageReactions.remove(msg.id)
+                                } else {
+                                    messageReactions[msg.id] = "❤️"
+                                }
+                            },
+                            onLongPress = {
+                                activeReactionPickerMsgId = if (activeReactionPickerMsgId == msg.id) null else msg.id
+                            }
+                        )
+                    }
+                }
 
+                // Floating Instagram Quick Emoji Reaction Picker
+                activeReactionPickerMsgId?.let { targetMsgId ->
                     Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.CenterStart
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 8.dp)
                     ) {
-                        if (draftText.isEmpty()) {
-                            Text(
-                                text = stringResource(
-                                    R.string.message_input_placeholder,
-                                    conversation.network.displayName
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        BasicTextField(
-                            value = draftText,
-                            onValueChange = { draftText = it },
-                            maxLines = 5,
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurface
-                            ),
-                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("message_composer_input")
+                        InstagramReactionPill(
+                            onSelectEmoji = { emoji ->
+                                messageReactions[targetMsgId] = emoji
+                                activeReactionPickerMsgId = null
+                            },
+                            onDismiss = { activeReactionPickerMsgId = null }
                         )
                     }
                 }
             }
 
-            FilledIconButton(
-                onClick = {
+            // Instagram DM Liquid Glass Bottom Composer
+            InstagramLiquidGlassComposer(
+                draftText = draftText,
+                networkName = conversation.network.displayName,
+                onDraftTextChange = { draftText = it },
+                onSend = {
                     if (draftText.isNotBlank()) {
                         onSendMessage(draftText)
                         draftText = ""
                     }
                 },
-                enabled = draftText.isNotBlank(),
-                shape = CircleShape,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier
-                    .size(48.dp)
-                    .testTag("send_message_button")
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = stringResource(R.string.send_message),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+                onSendHeart = {
+                    onSendMessage("❤️")
+                },
+                onCameraClick = onSimulateReply
+            )
         }
-    }
-
-    inspectedMessage?.let { msg ->
-        CipherEnvelopeInspectorDialog(
-            message = msg,
-            onDismiss = { inspectedMessage = null }
-        )
     }
 
     if (showSafetyDialog) {
@@ -455,79 +432,336 @@ fun ChatThreadPane(
     }
 }
 
+/**
+ * Instagram-styled message bubble featuring liquid-glass-js refractive highlights,
+ * signature sunset berry gradients for outgoing messages, frosted translucent incoming bubbles,
+ * and double-tap to heart reactions with zero annoying popups.
+ */
 @Composable
-private fun BeeperMessageBubble(
+private fun InstagramLiquidGlassMessageBubble(
     message: DecryptedMessage,
-    onInspectCipher: () -> Unit
+    reaction: String?,
+    isLastOutgoing: Boolean,
+    onDoubleTapHeart: () -> Unit,
+    onLongPress: () -> Unit
 ) {
     val alignment = if (message.isOutgoing) Alignment.CenterEnd else Alignment.CenterStart
     val bubbleShape = if (message.isOutgoing) {
-        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 5.dp)
+        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 4.dp)
     } else {
-        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 5.dp, bottomEnd = 20.dp)
+        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp)
     }
 
-    val bubbleContainer = if (message.isOutgoing) {
-        MaterialTheme.colorScheme.primary
+    // Refractive specular rim lighting for Liquid Glass look
+    val specularBorder = if (message.isOutgoing) {
+        Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.40f), // Crisp top highlight
+                Color.White.copy(alpha = 0.12f),
+                Color.Transparent
+            )
+        )
     } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val bubbleContent = if (message.isOutgoing) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurface
+        Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.28f), // Liquid glass rim
+                Color(0xFF00F2FE).copy(alpha = 0.14f), // Subtle chromatic aberration
+                Color.White.copy(alpha = 0.08f),
+                Color.Transparent
+            )
+        )
     }
 
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
         contentAlignment = alignment
     ) {
-        Surface(
-            shape = bubbleShape,
-            color = bubbleContainer,
-            border = if (message.isOutgoing) {
-                null
-            } else {
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-            },
-            modifier = Modifier
-                .widthIn(max = 400.dp)
-                .clickable(onClick = onInspectCipher)
-                .testTag("message_bubble_${message.id}")
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = message.plainText,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = bubbleContent
-                )
+        Column(horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start) {
+            Box {
+                Surface(
+                    shape = bubbleShape,
+                    color = if (message.isOutgoing) Color.Transparent else InstagramIncomingGlassDark,
+                    border = BorderStroke(1.dp, specularBorder),
+                    modifier = Modifier
+                        .widthIn(max = 320.dp)
+                        .clip(bubbleShape)
+                        .then(
+                            if (message.isOutgoing) {
+                                Modifier.background(
+                                    Brush.linearGradient(
+                                        colors = InstagramGradientBerry,
+                                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                        end = androidx.compose.ui.geometry.Offset(400f, 400f)
+                                    )
+                                )
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .pointerInput(message.id) {
+                            detectTapGestures(
+                                onDoubleTap = { onDoubleTapHeart() },
+                                onLongPress = { onLongPress() },
+                                onTap = { /* No annoying popup! */ }
+                            )
+                        }
+                        .testTag("message_bubble_${message.id}")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = message.plainText,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = if (message.plainText == "❤️") 36.sp else 15.sp,
+                                lineHeight = if (message.plainText == "❤️") 42.sp else 21.sp,
+                                color = Color.White
+                            )
+                        )
+                    }
+                }
 
+                // Floating Reaction Badge (Instagram-style heart on the bottom edge)
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = reaction != null,
+                    enter = scaleIn() + fadeIn(),
+                    exit = scaleOut() + fadeOut(),
+                    modifier = Modifier
+                        .align(if (message.isOutgoing) Alignment.BottomStart else Alignment.BottomEnd)
+                        .offset(x = if (message.isOutgoing) (-4).dp else 4.dp, y = 8.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFF1E1E26),
+                        border = BorderStroke(1.5.dp, Color(0xFF101015)),
+                        shadowElevation = 3.dp,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = reaction ?: "❤️",
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Instagram Seen / Delivery status indicator beneath last outgoing message
+            if (isLastOutgoing) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    modifier = Modifier.align(Alignment.End)
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.padding(top = 4.dp, end = 4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Code,
-                        contentDescription = stringResource(R.string.inspect_cipher),
-                        modifier = Modifier.size(11.dp),
-                        tint = bubbleContent.copy(alpha = 0.72f)
-                    )
                     Text(
-                        text = formatMessageTime(message.timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = bubbleContent.copy(alpha = 0.78f)
-                    )
-                    if (message.isOutgoing) {
-                        Icon(
-                            imageVector = Icons.Outlined.DoneAll,
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = bubbleContent.copy(alpha = 0.85f)
+                        text = "Seen ${formatMessageTime(message.timestamp)}",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.sp,
+                            color = Color(0xFFA1A1AA)
                         )
+                    )
+                    Icon(
+                        imageVector = Icons.Outlined.DoneAll,
+                        contentDescription = null,
+                        tint = Color(0xFFA1A1AA),
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Instagram-style Quick Emoji Reaction Pill with liquid glass effect
+ */
+@Composable
+private fun InstagramReactionPill(
+    onSelectEmoji: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val emojis = listOf("❤️", "🔥", "😂", "😮", "😢", "👍")
+
+    LiquidGlassPill(
+        shape = CircleShape,
+        backgroundColor = Color(0xFF1E1E26).copy(alpha = 0.95f),
+        specularAlpha = 0.40f,
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            emojis.forEach { emoji ->
+                Text(
+                    text = emoji,
+                    fontSize = 24.sp,
+                    modifier = Modifier
+                        .clickable { onSelectEmoji(emoji) }
+                        .padding(4.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Instagram DM Liquid Glass Bottom Composer with photo camera button,
+ * message textfield, mic, gallery, instant heart tap, and bold blue "Send" button.
+ */
+@Composable
+private fun InstagramLiquidGlassComposer(
+    draftText: String,
+    networkName: String,
+    onDraftTextChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onSendHeart: () -> Unit,
+    onCameraClick: () -> Unit
+) {
+    Surface(
+        color = Color(0xFF101015).copy(alpha = 0.88f),
+        border = BorderStroke(
+            1.dp,
+            Brush.verticalGradient(
+                listOf(
+                    Color.White.copy(alpha = 0.12f),
+                    Color.Transparent
+                )
+            )
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Instagram blue circular Camera shortcut button
+            Surface(
+                onClick = onCameraClick,
+                shape = CircleShape,
+                color = InstagramBlueAction,
+                modifier = Modifier
+                    .size(38.dp)
+                    .testTag("chat_camera_button")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.CameraAlt,
+                        contentDescription = stringResource(R.string.instagram_camera),
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+            }
+
+            // Liquid Glass Pill Input Field
+            LiquidGlassPill(
+                shape = CircleShape,
+                backgroundColor = Color(0xFF1C1C24).copy(alpha = 0.92f),
+                specularAlpha = 0.32f,
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (draftText.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.message_input_placeholder),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF94A3B8)
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        BasicTextField(
+                            value = draftText,
+                            onValueChange = onDraftTextChange,
+                            maxLines = 4,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 15.sp,
+                                color = Color.White
+                            ),
+                            cursorBrush = SolidColor(InstagramBlueAction),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("message_composer_input")
+                        )
+                    }
+
+                    // Instagram-style action icons inside input pill
+                    if (draftText.isEmpty()) {
+                        IconButton(
+                            onClick = onCameraClick,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Mic,
+                                contentDescription = stringResource(R.string.instagram_mic),
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onCameraClick,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Image,
+                                contentDescription = stringResource(R.string.instagram_gallery),
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Instagram vibrant red heart button
+                        IconButton(
+                            onClick = onSendHeart,
+                            modifier = Modifier
+                                .size(28.dp)
+                                .testTag("chat_heart_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = stringResource(R.string.instagram_heart),
+                                tint = InstagramHeartRed,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    } else {
+                        // Bold Instagram Blue "Send" text button
+                        TextButton(
+                            onClick = onSend,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.testTag("send_message_button")
+                        ) {
+                            Text(
+                                text = stringResource(R.string.instagram_send),
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = InstagramBlueAction,
+                                    fontSize = 15.sp
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -540,7 +774,7 @@ fun EmptyThreadPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color(0xFF0B0B0F)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -548,18 +782,16 @@ fun EmptyThreadPlaceholder(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(32.dp)
         ) {
-            Surface(
+            LiquidGlassPill(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(64.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Outlined.Lock,
+                        imageVector = Icons.Filled.Favorite,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        tint = InstagramHeartRed,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
@@ -567,7 +799,7 @@ fun EmptyThreadPlaceholder(modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(R.string.select_chat_prompt),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color(0xFFA1A1AA)
             )
         }
     }
